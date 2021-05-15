@@ -17,7 +17,14 @@ namespace whuts
 
         (P3D offset, int rotation)[] currentPieces;
 
-        public Solver(P3D[] piece) => octocube = piece;
+        public Solver(P3D[] piece)
+        {
+            if (piece[0].x != 0 || piece[0].y != 0 || piece[0].z != 0)
+            {
+                throw new InvalidOperationException("The firs cube of the piece must be at (0,0,0).");
+            }
+            octocube = piece;
+        }
 
         public void FindFit()
         {
@@ -71,7 +78,9 @@ namespace whuts
                     {
                         for (var offz = rot == minRot && offx == minX && offy == minY ? minZ : 0; offz < currentBox.z; offz++)
                         {
-                            if (offx == 0 && offy == 0 && offz == 0) continue;
+                            // The first cube is always at (0,0,0) so the rotation doesn't matter, we check that position first
+                            if (tiling[(offx, offy, offz)]) continue;
+
                             var pos = TryPlace((offx, offy, offz), rot);
                             if (pos != null)
                             {
@@ -94,7 +103,10 @@ namespace whuts
         {
             var rotated = rotations[rotation];
             var positions = new P3D[8];
-            var i = 0;
+            // first cube (idx=0) is (0,0,0), just store offset
+            tiling[positions[0] = offset] = true;
+
+            var i = 1;
             for (; i < 8; i++)
             {
                 var p = positions[i] = (rotated[i] + offset) % currentBox;
