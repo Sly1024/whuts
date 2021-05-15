@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace whuts
 {
     // A 3D point structure that supports convenience operations like -p, p1+p2, p1 % p2 (modulo on all 3 dimensions)
@@ -30,5 +33,14 @@ namespace whuts
         }
         // integer remainder in all 3 dimensions, but always non-negative results
         public static P3D operator %(P3D p, P3D mod) => new P3D { x = PosRem(p.x, mod.x), y = PosRem(p.y, mod.y), z = PosRem(p.z, mod.z) };
+    }
+
+    class P3DComparer : IComparer<P3D>
+    {
+        public int Compare(P3D a, P3D b)
+        {
+            // return a.x * a.y * a.z - b.x * b.y * b.z;
+            return Math.Max(Math.Max(a.x, a.y), a.z) - Math.Max(Math.Max(b.x, b.y), b.z);
+        }
     }
 }

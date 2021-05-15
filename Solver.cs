@@ -1,6 +1,8 @@
 using System.Collections;
 using System;
 using System.Collections.Generic;
+
+
 namespace whuts
 {
     public class Solver
@@ -28,7 +30,7 @@ namespace whuts
 
         public void FindFit()
         {
-            GenerateBoxes(4, 4, 4);
+            GenerateBoxes(8, 8, 8);
             Console.WriteLine("found {0} boxes", boxes.Count);
             GenerateRotations();
             Console.WriteLine("generated {0} rotations", rotations.Count);
@@ -61,43 +63,66 @@ namespace whuts
             if (TryPlace((0, 0, 0), 0) == null) return false;
             currentPieces[0] = ((0, 0, 0), 0);
 
-            return TryPlaceAll(1);
+            return TryPlaceAll(1, GenerateCombinations());
         }
 
-        bool TryPlaceAll(int idx, int minRot = 0, int minX = 0, int minY = 0, int minZ = 0)
+        List<(P3D offset, int rotation)> GenerateCombinations()
         {
-            if (idx == currentCount) return true;
+            var combinations = new List<(P3D pos, int rot)>();
 
             // all rotations
-            for (var rot = minRot; rot < rotations.Count; rot++)
+            for (var rot = 0; rot < rotations.Count; rot++)
             {
                 // all offsets
-                for (var offx = rot == minRot ? minX : 0; offx < currentBox.x; offx++)
+                for (var offx = 0; offx < currentBox.x; offx++)
                 {
-                    for (var offy = rot == minRot && offx == minX ? minY : 0; offy < currentBox.y; offy++)
+                    for (var offy = 0; offy < currentBox.y; offy++)
                     {
-                        for (var offz = rot == minRot && offx == minX && offy == minY ? minZ : 0; offz < currentBox.z; offz++)
+                        for (var offz = 0; offz < currentBox.z; offz++)
                         {
-                            // The first cube is always at (0,0,0) so the rotation doesn't matter, we check that position first
-                            if (tiling[(offx, offy, offz)]) continue;
-
-                            var pos = TryPlace((offx, offy, offz), rot);
-                            if (pos != null) // place successful
-                            {
-                                // we already tried every combination of offset+rotation up until the current one,
-                                // so after placing the piece successfully, the next iteration doesn't have to try
-                                // those combinations, we know they would fail, therefore we pass in min values to start from
-                                if (TryPlaceAll(idx + 1, rot, offx, offy, offz + 1))
-                                {
-                                    currentPieces[idx] = ((offx, offy, offz), rot);
-                                    return true;
-                                }
-                                RemovePiece(pos);
-                            }
+                            combinations.Add(((offx, offy, offz), rot));
                         }
                     }
                 }
             }
+            return combinations;
+        }
+
+        bool TryPlaceAll(int idx, List<(P3D offset, int rotation)> combinations, int startIdx = 0)
+        {
+            if (idx == currentCount) return true;
+
+            var workingCombinations = new List<(P3D offset, int rotation)>();
+
+            // first filter out all the combinations that work (can be placed in the current setup)
+            for (int i = startIdx; i < combinations.Count; i++)
+            {
+                (P3D offset, int rotation) combination = combinations[i];
+                // The first cube is always at (0,0,0) so the rotation doesn't matter, we check that position first
+                if (tiling[combination.offset]) continue;
+
+                var pos = TryPlace(combination.offset, combination.rotation);
+                if (pos != null)
+                {
+                    workingCombinations.Add(combination);
+                    RemovePiece(pos);
+                }
+            }
+            combinations = null;
+
+            // then we recursively search with the "working" combinations
+            for (int i = 0; i < workingCombinations.Count; i++)
+            {
+                (P3D offset, int rotation) working = workingCombinations[i];
+                var pos = TryPlace(working.offset, working.rotation);
+                if (TryPlaceAll(idx + 1, workingCombinations, i + 1))
+                {
+                    currentPieces[idx] = working;
+                    return true;
+                }
+                RemovePiece(pos);
+            }
+
             return false;
         }
 
@@ -149,9 +174,10 @@ namespace whuts
                     }
                 }
             }
-        }
 
-        void GenerateRotations()
+            boxes.Sort(new P3DComparer());
+        }
+                void GenerateRotations()
         {
             rotations = new List<P3D[]>();
 
