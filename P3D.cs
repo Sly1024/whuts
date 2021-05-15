@@ -1,5 +1,6 @@
 namespace whuts
 {
+    // A 3D point structure that supports convenience operations like -p, p1+p2, p1 % p2 (modulo on all 3 dimensions)
     public struct P3D
     {
         public int x, y, z;
@@ -27,6 +28,7 @@ namespace whuts
             while (a >= b) a -= b;
             return a;
         }
+        // integer remainder in all 3 dimensions, but always non-negative results
         public static P3D operator %(P3D p, P3D mod) => new P3D { x = PosRem(p.x, mod.x), y = PosRem(p.y, mod.y), z = PosRem(p.z, mod.z) };
     }
 }

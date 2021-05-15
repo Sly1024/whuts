@@ -82,15 +82,17 @@ namespace whuts
                             if (tiling[(offx, offy, offz)]) continue;
 
                             var pos = TryPlace((offx, offy, offz), rot);
-                            if (pos != null)
+                            if (pos != null) // place successful
                             {
-                                // place successful
-                                if (TryPlaceAll(idx + 1, rot, offx, offy, offz))
+                                // we already tried every combination of offset+rotation up until the current one,
+                                // so after placing the piece successfully, the next iteration doesn't have to try
+                                // those combinations, we know they would fail, therefore we pass in min values to start from
+                                if (TryPlaceAll(idx + 1, rot, offx, offy, offz + 1))
                                 {
                                     currentPieces[idx] = ((offx, offy, offz), rot);
                                     return true;
                                 }
-                                UnPlace(pos);
+                                RemovePiece(pos);
                             }
                         }
                     }
@@ -121,7 +123,7 @@ namespace whuts
             return positions;
         }
 
-        void UnPlace(P3D[] pos)
+        void RemovePiece(P3D[] pos)
         {
             for (var i = 0; i < 8; i++)
             {
@@ -176,8 +178,6 @@ namespace whuts
             }
         }
 
-
-
         P3D[] GenerateRotation((P3D row1, P3D row2, P3D row3) matrix)
         {
             var rotated = new P3D[8];
@@ -190,18 +190,11 @@ namespace whuts
             return rotated;
         }
 
-        int DotProduct(P3D v1, P3D v2) => v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+        static int DotProduct(P3D v1, P3D v2) => v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 
-        int[][] EvenPermutations = new int[][] { new int[] { 0, 1, 2 }, new int[] { 1, 2, 0 }, new int[] { 2, 0, 1 } };
-        int[][] OddPermutations = new int[][] { new int[] { 0, 2, 1 }, new int[] { 2, 1, 0 }, new int[] { 1, 0, 2 } };
+        static readonly int[][] EvenPermutations = new int[][] { new int[] { 0, 1, 2 }, new int[] { 1, 2, 0 }, new int[] { 2, 0, 1 } };
+        static readonly int[][] OddPermutations = new int[][] { new int[] { 0, 2, 1 }, new int[] { 2, 1, 0 }, new int[] { 1, 0, 2 } };
 
-        P3D[] PermuteRows(P3D[] rows, int[] permut)
-        {
-            return new P3D[] {
-                rows[permut[0]],
-                rows[permut[1]],
-                rows[permut[2]]
-            };
-        }
+        static P3D[] PermuteRows(P3D[] rows, int[] permut) => new P3D[] { rows[permut[0]], rows[permut[1]], rows[permut[2]] };
     }
 }
