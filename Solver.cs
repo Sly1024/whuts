@@ -7,12 +7,10 @@ namespace whuts
 {
     public class Solver
     {
-
         P3D[] octocube;
         List<P3D[]> rotations;
 
         List<P3D> boxes;
-        // bool[,,] tiling;
         TileBits tiling;
         P3D currentBox;
         int currentCount;
@@ -23,31 +21,30 @@ namespace whuts
         {
             if (piece[0].x != 0 || piece[0].y != 0 || piece[0].z != 0)
             {
-                throw new InvalidOperationException("The firs cube of the piece must be at (0,0,0).");
+                throw new InvalidOperationException("The first cube of the piece must be at (0,0,0).");
             }
             octocube = piece;
         }
 
-        public void FindFit()
+        public bool FindFit()
         {
-            GenerateBoxes(8, 8, 8);
-            Console.WriteLine("found {0} boxes", boxes.Count);
+            GenerateBoxes(4, 4, 4);
             GenerateRotations();
-            Console.WriteLine("generated {0} rotations", rotations.Count);
 
             foreach (var box in boxes)
             {
-                Console.WriteLine("Trying box " + box);
                 if (TryFitBox(box))
                 {
-                    //Console.WriteLine("Fit in box " + box);
+                    Console.Write("Fit in box " + box + ", " + currentPieces.Length + " pcs;");
                     foreach (var piece in currentPieces)
                     {
-                        Console.WriteLine(" " + piece.offset + " r:" + piece.rotation);
+                        Console.Write(" " + piece);
                     }
-                    break;
+                    Console.WriteLine();
+                    return true;
                 }
             }
+            return false;
         }
         private bool TryFitBox(P3D box)
         {
@@ -56,7 +53,6 @@ namespace whuts
             currentPieces = new (P3D offset, int rotation)[currentCount];
 
             // need a 3d array to store bits (occupied/empty)
-            // tiling = new bool[box.x, box.y, box.z];
             tiling = new TileBits(box);
 
             // put first piece in with no rotation, no offset
@@ -136,10 +132,14 @@ namespace whuts
             var i = 1;
             for (; i < 8; i++)
             {
+                // This is where the remainder of the coordinates is calculated
                 var p = positions[i] = (rotated[i] + offset) % currentBox;
+                // If the cube is occupied, we failed to place the piece
                 if (tiling[p]) break;
+                // otherwise indicate that it's not occupied
                 tiling[p] = true;
             }
+            // if we couldn't place all 8 cubes, we revert back the occupied flags
             if (i < 8)
             {
                 while (--i >= 0) tiling[positions[i]] = false;
@@ -177,7 +177,8 @@ namespace whuts
 
             boxes.Sort(new P3DComparer());
         }
-                void GenerateRotations()
+
+        void GenerateRotations()
         {
             rotations = new List<P3D[]>();
 
